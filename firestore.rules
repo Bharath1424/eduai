@@ -88,6 +88,24 @@ service cloud.firestore {
       return request.resource.data.id == resource.data.id;
     }
 
+    /**
+     * Validates required fields for creating a new topic document.
+     */
+    function hasValidTopicDataOnCreate(userId) {
+      return request.resource.data.userId == userId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.icon is string
+        && request.resource.data.icon.size() > 0;
+    }
+
+    /**
+     * Validates that critical, immutable fields for topics are not changed.
+     */
+    function topicDataIsImmutable() {
+        return request.resource.data.userId == resource.data.userId;
+    }
+
     // =====================================================================
     // Collection Rules: /users
     // =====================================================================
@@ -116,6 +134,16 @@ service cloud.firestore {
       allow create: if isOwner(userId) && hasValidUserDataOnCreate(userId);
       allow update: if isExistingOwner(userId) && userDataIsImmutable();
       allow delete: if isExistingOwner(userId);
+
+      // =====================================================================
+      // Sub-collection Rules: /users/{userId}/topics
+      // =====================================================================
+      match /topics/{topicId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTopicDataOnCreate(userId);
+        allow update: if isExistingOwner(userId) && topicDataIsImmutable();
+        allow delete: if isExistingOwner(userId);
+      }
     }
   }
 }

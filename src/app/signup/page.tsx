@@ -14,8 +14,9 @@ import { useAuth } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { setDoc, doc } from 'firebase/firestore';
+import { setDoc, doc, writeBatch, collection } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
+import { defaultTopics } from '@/lib/data';
 
 
 const signupSchema = z.object({
@@ -48,15 +49,32 @@ export default function SignupPage() {
       
       await updateProfile(user, { displayName: values.name });
 
+      const batch = writeBatch(firestore);
+
       // Create user document in Firestore
       const [firstName, ...lastName] = values.name.split(' ');
-      await setDoc(doc(firestore, "users", user.uid), {
+      const userDocRef = doc(firestore, "users", user.uid);
+      batch.set(userDocRef, {
         id: user.uid,
         email: user.email,
         firstName: firstName || '',
         lastName: lastName.join(' ') || '',
         signUpDate: new Date().toISOString(),
       });
+
+      // Add default topics for the new user
+      defaultTopics.forEach(topic => {
+          const newTopicRef = doc(collection(firestore, 'users', user.uid, 'topics'));
+          batch.set(newTopicRef, {
+              name: topic.name,
+              icon: topic.icon,
+              userId: user.uid,
+              isDefault: true,
+              defaultId: topic.id
+          });
+      });
+
+      await batch.commit();
 
       toast({
         title: "Account created!",

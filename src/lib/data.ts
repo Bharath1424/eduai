@@ -1,4 +1,4 @@
-export type Quiz = {
+export type QuizHistoryItem = {
   id: string;
   topic: string;
   score: number;
@@ -16,16 +16,16 @@ export type ChatSession = {
     }[];
 };
 
-export const topics = [
+export const defaultTopics = [
   { id: 'algebra', name: 'Algebra', icon: 'Calculator' },
   { id: 'biology', name: 'Biology', icon: 'Dna' },
   { id: 'history', name: 'World History', icon: 'Landmark' },
   { id: 'literature', name: 'Literature', icon: 'BookOpen' },
   { id: 'chemistry', name: 'Chemistry', icon: 'FlaskConical' },
-  { id: 'physics', name: 'Atom' },
+  { id: 'physics', name: 'Physics', icon: 'Atom' },
 ];
 
-export const quizHistory: Quiz[] = [
+export const quizHistory: QuizHistoryItem[] = [
   { id: '1', topic: 'Algebra', score: 8, total: 10, date: '2024-07-20' },
   { id: '2', topic: 'Biology', score: 9, total: 10, date: '2024-07-19' },
   { id: '3', topic: 'World History', score: 6, total: 10, date: '2024-07-18' },

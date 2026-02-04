@@ -36,6 +36,30 @@
         "lastName",
         "signUpDate"
       ]
+    },
+    "Topic": {
+      "title": "Topic",
+      "description": "A user-created quiz topic.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the topic."
+        },
+        "icon": {
+          "type": "string",
+          "description": "The name of the lucide-react icon for the topic."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who created this topic."
+        }
+      },
+      "required": [
+        "name",
+        "icon",
+        "userId"
+      ]
     }
   },
   "auth": {
@@ -57,6 +81,26 @@
             {
               "name": "userId",
               "description": "The unique identifier for the user, corresponding to their Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/topics/{topicId}",
+        "definition": {
+          "entityName": "Topic",
+          "schema": {
+            "$ref": "#/backend/entities/Topic"
+          },
+          "description": "Stores user-created quiz topics. Each user has their own set of topics.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The UID of the user who owns these topics."
+            },
+            {
+              "name": "topicId",
+              "description": "The unique identifier for the topic."
             }
           ]
         }
