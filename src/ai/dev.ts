@@ -3,3 +3,4 @@ config();
 
 import '@/ai/flows/ai-chatbot-assistant.ts';
 import '@/ai/flows/reasoning-tool-supporting-facts.ts';
+import '@/ai/flows/quiz-generator.ts';

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { quizQuestions } from '@/lib/data';
 import * as Lucide from 'lucide-react';
 import { CheckCircle, XCircle, PlusCircle, Loader2 } from 'lucide-react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -26,6 +25,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { quizGenerator } from '@/ai/flows/quiz-generator';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 const newTopicSchema = z.object({
     name: z.string().min(2, { message: "Topic name must be at least 2 characters." }),
@@ -63,6 +65,7 @@ const Icon = ({ name }: { name: string }) => {
 export default function QuizPage() {
     const { user } = useUser();
     const firestore = useFirestore();
+    const { toast } = useToast();
 
     const topicsQuery = useMemoFirebase(() => {
         if (!user || !firestore) return null;
@@ -79,6 +82,7 @@ export default function QuizPage() {
     const [quizFinished, setQuizFinished] = useState(false);
     const [isCreatingTopic, setIsCreatingTopic] = useState(false);
     const [openNewTopicDialog, setOpenNewTopicDialog] = useState(false);
+    const [generatingTopicId, setGeneratingTopicId] = useState<string | null>(null);
 
     const form = useForm<z.infer<typeof newTopicSchema>>({
         resolver: zodResolver(newTopicSchema),
@@ -107,18 +111,33 @@ export default function QuizPage() {
         }
     };
 
-    const startQuiz = (topic: Topic) => {
-        const topicIdForQuestions = topic.isDefault ? topic.defaultId : topic.id;
-        const questions = quizQuestions[topicIdForQuestions as keyof typeof quizQuestions] || [];
-        if (questions.length === 0) {
-            alert("No questions available for this topic yet. You can add questions in the future!");
-            return;
+    const startQuiz = async (topic: Topic) => {
+        setGeneratingTopicId(topic.id);
+        try {
+            const result = await quizGenerator({ topic: topic.name });
+            if (!result.questions || result.questions.length === 0) {
+                toast({
+                    variant: "destructive",
+                    title: 'Quiz Generation Failed',
+                    description: `Could not generate a quiz for "${topic.name}". Please try another topic.`,
+                });
+                return;
+            }
+            setSelectedTopic(topic);
+            setCurrentQuestions(result.questions);
+            setCurrentQuestionIndex(0);
+            setAnswers([]);
+            setQuizFinished(false);
+        } catch (error) {
+            console.error("Error generating quiz:", error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to generate the quiz. Please check the console and try again later.",
+            });
+        } finally {
+            setGeneratingTopicId(null);
         }
-        setSelectedTopic(topic);
-        setCurrentQuestions(questions);
-        setCurrentQuestionIndex(0);
-        setAnswers([]);
-        setQuizFinished(false);
     };
 
     const handleNextQuestion = () => {
@@ -304,10 +323,27 @@ export default function QuizPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {topics?.map(topic => (
-                    <Card key={topic.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => startQuiz(topic)}>
+                    <Card 
+                        key={topic.id} 
+                        className={cn(
+                            "hover:shadow-lg transition-shadow",
+                            generatingTopicId ? "cursor-not-allowed" : "cursor-pointer",
+                            generatingTopicId && generatingTopicId !== topic.id && "opacity-50"
+                        )}
+                        onClick={() => !generatingTopicId && startQuiz(topic)}
+                    >
                         <CardContent className="flex flex-col items-center justify-center p-6 text-center h-40">
-                            <Icon name={topic.icon} />
-                            <p className="mt-4 font-semibold text-lg">{topic.name}</p>
+                            {generatingTopicId === topic.id ? (
+                                <>
+                                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                                    <p className="mt-4 font-semibold text-lg">Generating Quiz...</p>
+                                </>
+                            ) : (
+                                <>
+                                    <Icon name={topic.icon} />
+                                    <p className="mt-4 font-semibold text-lg">{topic.name}</p>
+                                </>
+                            )}
                         </CardContent>
                     </Card>
                 ))}
