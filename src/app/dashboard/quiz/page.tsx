@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -38,13 +38,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { quizGenerator } from '@/ai/flows/quiz-generator';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { defaultTopics } from '@/lib/data';
 
 const newTopicSchema = z.object({
     name: z.string().min(2, { message: "Topic name must be at least 2 characters." }),
     icon: z.string().min(1, { message: "Please select an icon." }),
 });
 
-const availableIcons = ['Calculator', 'Dna', 'Landmark', 'BookOpen', 'FlaskConical', 'Atom', 'Brain', 'Globe', 'Code', 'Palette', 'Music', 'Film'];
+const availableIcons = ['Calculator', 'Dna', 'Landmark', 'BookOpen', 'FlaskConical', 'Atom', 'Brain', 'Globe', 'Code', 'Palette', 'Music', 'Film', 'Trophy'];
 
 type Topic = {
     id: string;
@@ -82,7 +83,27 @@ export default function QuizPage() {
         return collection(firestore, 'users', user.uid, 'topics');
     }, [user, firestore]);
 
-    const { data: topics, isLoading: topicsLoading } = useCollection<Topic>(topicsQuery);
+    const { data: userTopics, isLoading: topicsLoading } = useCollection<Topic>(topicsQuery);
+    
+    const topics = useMemo(() => {
+        const allTopics: Topic[] = [...(userTopics || [])];
+        if (!topicsLoading && user) {
+            const userTopicDefaultIds = userTopics?.map(t => t.defaultId).filter(Boolean) || [];
+
+            defaultTopics.forEach(defaultTopic => {
+                if (!userTopicDefaultIds.includes(defaultTopic.id)) {
+                    allTopics.push({
+                        ...defaultTopic,
+                        id: defaultTopic.id,
+                        userId: user.uid,
+                        isDefault: true,
+                        defaultId: defaultTopic.id,
+                    });
+                }
+            });
+        }
+        return allTopics.sort((a, b) => a.name.localeCompare(b.name));
+    }, [userTopics, topicsLoading, user]);
 
     const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
     const [currentQuestions, setCurrentQuestions] = useState<QuizQuestion[]>([]);
@@ -136,6 +157,17 @@ export default function QuizPage() {
     const startQuiz = async (topic: Topic) => {
         setGeneratingTopicId(topic.id);
         try {
+             // If it's a default topic not yet in the user's collection, add it now non-blockingly.
+            if (topic.isDefault && user && topicsQuery && !userTopics?.some(ut => ut.defaultId === topic.defaultId)) {
+                addDoc(topicsQuery, {
+                    name: topic.name,
+                    icon: topic.icon,
+                    userId: user.uid,
+                    isDefault: true,
+                    defaultId: topic.defaultId,
+                });
+            }
+
             const result = await quizGenerator({ topic: topic.name });
             if (!result.questions || result.questions.length === 0) {
                 toast({
@@ -335,7 +367,7 @@ export default function QuizPage() {
                  </div>
             )}
 
-            {!topicsLoading && topics && topics.length === 0 && (
+            {!topicsLoading && topics.length === 0 && (
                 <Card>
                     <CardContent className="p-6 text-center">
                         <p className="text-muted-foreground">You haven't created any topics yet. Click "Create Topic" to get started!</p>
