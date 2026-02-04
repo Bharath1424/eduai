@@ -55,10 +55,16 @@ export default function LoginPage() {
       router.push('/dashboard');
     } catch (error: any) {
       console.error("Login Error:", error);
+      let description = "An unexpected error occurred. Please try again later.";
+
+      if (error.code === 'auth/invalid-credential') {
+        description = "Invalid credentials. Please check your email and password.";
+      }
+      
       toast({
         variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: error.message || "Could not log you in. Please check your credentials.",
+        title: "Login Failed",
+        description,
       });
     }
   };
