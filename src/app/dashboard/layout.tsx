@@ -1,12 +1,16 @@
 'use client';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger, SidebarHeader } from '@/components/ui/sidebar';
 import DashboardNav from '@/components/dashboard-nav';
 import Logo from '@/components/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
-import { BrainCircuit } from 'lucide-react';
+import { BrainCircuit, Loader2 } from 'lucide-react';
+import { useAuth, useUser } from '@/firebase';
+import { useEffect } from 'react';
+import { signOut } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
 
 const titleMap: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -17,7 +21,23 @@ const titleMap: { [key: string]: string } = {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, isUserLoading } = useUser();
   const title = titleMap[pathname] || 'Dashboard';
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.replace('/login');
+    }
+  }, [isUserLoading, user, router]);
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -53,20 +73,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 }
 
 function UserMenu() {
+    const { user } = useUser();
+    const auth = useAuth();
+    const router = useRouter();
+    const { toast } = useToast();
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            toast({
+                title: "Logged Out",
+                description: "You have been successfully logged out.",
+            });
+            router.push('/login');
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: "Logout Failed",
+                description: error.message || "An error occurred during logout.",
+            });
+        }
+    };
+    
+    const getInitials = (name: string | null | undefined) => {
+        if (!name) return '??';
+        const names = name.split(' ');
+        if (names.length > 1) {
+            return names[0][0] + names[names.length - 1][0];
+        }
+        return name.substring(0, 2);
+    }
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Avatar className="cursor-pointer h-9 w-9">
-                    <AvatarImage src="https://picsum.photos/seed/user-avatar/40/40" data-ai-hint="person face" />
-                    <AvatarFallback>JD</AvatarFallback>
+                    <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user?.uid}/40/40`} data-ai-hint="person face" />
+                    <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
                 </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">John Doe</p>
+                        <p className="text-sm font-medium leading-none">{user?.displayName || 'User'}</p>
                         <p className="text-xs leading-none text-muted-foreground">
-                            john.doe@example.com
+                            {user?.email}
                         </p>
                     </div>
                 </DropdownMenuLabel>
@@ -74,8 +125,8 @@ function UserMenu() {
                 <DropdownMenuItem>Profile</DropdownMenuItem>
                 <DropdownMenuItem>Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                    <Link href="/">Logout</Link>
+                <DropdownMenuItem onClick={handleLogout}>
+                    Logout
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

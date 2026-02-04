@@ -1,15 +1,21 @@
+'use client';
+
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Bot, HelpCircle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { quizHistory, chatHistory } from '@/lib/data';
+import { useUser } from '@/firebase';
 
 export default function DashboardPage() {
+  const { user } = useUser();
+  const displayName = user?.displayName?.split(' ')[0] || 'User';
+
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-3xl font-bold font-headline">Welcome back, John!</h2>
+        <h2 className="text-3xl font-bold font-headline">Welcome back, {displayName}!</h2>
         <p className="text-muted-foreground">Here's a summary of your learning journey.</p>
       </div>
 
