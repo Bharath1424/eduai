@@ -139,7 +139,7 @@ service cloud.firestore {
       // Sub-collection Rules: /users/{userId}/topics
       // =====================================================================
       match /topics/{topicId} {
-        allow get, list: if isOwner(userId);
+        allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTopicDataOnCreate(userId);
         allow update: if isExistingOwner(userId) && topicDataIsImmutable();
         allow delete: if isExistingOwner(userId);
