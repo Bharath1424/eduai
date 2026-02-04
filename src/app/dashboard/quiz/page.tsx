@@ -2,14 +2,14 @@
 
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import * as Lucide from 'lucide-react';
-import { CheckCircle, XCircle, PlusCircle, Loader2 } from 'lucide-react';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { CheckCircle, XCircle, PlusCircle, Loader2, Trash2 } from 'lucide-react';
+import { useUser, useFirestore, useCollection, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, addDoc, doc } from 'firebase/firestore';
 import {
     Dialog,
     DialogContent,
@@ -19,6 +19,16 @@ import {
     DialogFooter,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -83,6 +93,7 @@ export default function QuizPage() {
     const [isCreatingTopic, setIsCreatingTopic] = useState(false);
     const [openNewTopicDialog, setOpenNewTopicDialog] = useState(false);
     const [generatingTopicId, setGeneratingTopicId] = useState<string | null>(null);
+    const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
 
     const form = useForm<z.infer<typeof newTopicSchema>>({
         resolver: zodResolver(newTopicSchema),
@@ -109,6 +120,17 @@ export default function QuizPage() {
         } finally {
             setIsCreatingTopic(false);
         }
+    };
+
+    const handleDeleteTopic = (topicId: string) => {
+        if (!user || !firestore) return;
+        const topicRef = doc(firestore, 'users', user.uid, 'topics', topicId);
+        deleteDocumentNonBlocking(topicRef);
+        toast({
+            title: "Topic Deleted",
+            description: "The topic has been successfully deleted.",
+        });
+        setTopicToDelete(null);
     };
 
     const startQuiz = async (topic: Topic) => {
@@ -326,12 +348,25 @@ export default function QuizPage() {
                     <Card 
                         key={topic.id} 
                         className={cn(
-                            "hover:shadow-lg transition-shadow",
+                            "hover:shadow-lg transition-shadow relative group",
                             generatingTopicId ? "cursor-not-allowed" : "cursor-pointer",
                             generatingTopicId && generatingTopicId !== topic.id && "opacity-50"
                         )}
                         onClick={() => !generatingTopicId && startQuiz(topic)}
                     >
+                         {!topic.isDefault && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-2 right-2 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-destructive/10 hover:bg-destructive/20 z-10"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setTopicToDelete(topic);
+                                }}
+                            >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                        )}
                         <CardContent className="flex flex-col items-center justify-center p-6 text-center h-40">
                             {generatingTopicId === topic.id ? (
                                 <>
@@ -348,6 +383,30 @@ export default function QuizPage() {
                     </Card>
                 ))}
             </div>
+
+            <AlertDialog open={!!topicToDelete} onOpenChange={(open) => !open && setTopicToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the <strong>{topicToDelete?.name}</strong> topic.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                if (topicToDelete) {
+                                    handleDeleteTopic(topicToDelete.id);
+                                }
+                            }}
+                            className={buttonVariants({ variant: "destructive" })}
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
