@@ -45,7 +45,7 @@ const newTopicSchema = z.object({
     icon: z.string().min(1, { message: "Please select an icon." }),
 });
 
-const availableIcons = ['Calculator', 'Dna', 'Landmark', 'BookOpen', 'FlaskConical', 'Atom', 'Brain', 'Globe', 'Code', 'Palette', 'Music', 'Film', 'Trophy'];
+const availableIcons = ['Calculator', 'Dna', 'Landmark', 'BookOpen', 'FlaskConical', 'Atom', 'Brain', 'Globe', 'Code', 'Palette', 'Music', 'Film', 'Trophy', 'Disc'];
 
 type Topic = {
     id: string;

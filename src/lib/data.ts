@@ -24,6 +24,7 @@ export const defaultTopics = [
   { id: 'chemistry', name: 'Chemistry', icon: 'FlaskConical' },
   { id: 'physics', name: 'Physics', icon: 'Atom' },
   { id: 'cricket', name: 'Cricket', icon: 'Trophy' },
+  { id: 'carrom', name: 'Carrom', icon: 'Disc' },
 ];
 
 export const quizHistory: QuizHistoryItem[] = [
