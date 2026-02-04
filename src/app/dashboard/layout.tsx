@@ -17,6 +17,7 @@ const titleMap: { [key: string]: string } = {
   '/dashboard/chatbot': 'AI Chatbot',
   '/dashboard/quiz': 'Quizzes',
   '/dashboard/history': 'History',
+  '/dashboard/rules': 'Game Rules',
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

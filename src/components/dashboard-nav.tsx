@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Bot, HelpCircle, History } from 'lucide-react';
+import { LayoutDashboard, Bot, HelpCircle, History, Swords } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { href: '/dashboard/chatbot', label: 'AI Chatbot', icon: Bot },
   { href: '/dashboard/quiz', label: 'Quizzes', icon: HelpCircle },
   { href: '/dashboard/history', label: 'History', icon: History },
+  { href: '/dashboard/rules', label: 'Game Rules', icon: Swords },
 ];
 
 export default function DashboardNav() {
