@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Bot, HelpCircle, History } from 'lucide-react';
+import { LayoutDashboard, Bot, HelpCircle, History, PenTool } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/chatbot', label: 'AI Chatbot', icon: Bot },
   { href: '/dashboard/quiz', label: 'Quizzes', icon: HelpCircle },
+  { href: '/dashboard/drawing', label: 'Drawing Tool', icon: PenTool },
   { href: '/dashboard/history', label: 'History', icon: History },
 ];
 
