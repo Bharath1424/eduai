@@ -17,6 +17,7 @@ const titleMap: { [key: string]: string } = {
   '/dashboard/chatbot': 'AI Chatbot',
   '/dashboard/quiz': 'Quizzes',
   '/dashboard/drawing': 'Drawing Tool',
+  '/dashboard/python-explainer': 'Python Code Explainer',
   '/dashboard/history': 'History',
 };
 
